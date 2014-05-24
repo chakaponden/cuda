@@ -148,8 +148,10 @@ int main(int argc, char *argv[])
       host_resolutions[ind_tmp] = (double)all_resolutions;
     
     // show each images name and it's number of pixels
+    /*
     for(ind_tmp = 0; ind_tmp < images_num; ind_tmp++)
       printf("%s: %0.0f\n", filenames[ind_tmp], image_resolutions[ind_tmp]);
+    */
     
     
 /*
