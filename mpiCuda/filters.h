@@ -17,7 +17,7 @@ static const pixel_channel kernel[KERNEL_SIZE][KERNEL_SIZE] =	{  0, -1,  0,
         description=MagickGetException(wand,&severity); \
         printf("\n\n-----\n%s %s %lu %s\n",GetMagickModule(),description); \
         description=(char *) MagickRelinquishMemory(description); \
-        exit(-1); \
+        exit(-1);\
 }
 
 typedef struct
@@ -59,8 +59,7 @@ int new_image(char *image_full_name, wind_image **img)
   }
   
   MagickWand *mw = NULL;					// image object
-  mw = NewMagickWand();						// create a wand
-  
+  mw = NewMagickWand();						// create a wand  
   if(MagickReadImageFile(mw, f) != MagickFalse)			// read image from open descriptor
   {
     (*img)->height = MagickGetImageHeight(mw);
@@ -71,13 +70,10 @@ int new_image(char *image_full_name, wind_image **img)
   } 
   else
   {
-
     mw = DestroyMagickWand(mw);					// free memory magick_wand object
     fclose(f);
     ThrowWandException(mw);
-  }
-
-  
+  }  
   unsigned long ind_height, ind_width, tmp_width;
   PixelIterator *iterator = NULL;
   if((iterator = NewPixelIterator(mw)) == NULL)
@@ -99,13 +95,55 @@ int new_image(char *image_full_name, wind_image **img)
   }  
   iterator = DestroyPixelIterator(iterator);			// free memory magick_wand iterator
   mw = DestroyMagickWand(mw);					// free memory magick_wand object
-  fclose(f);							// close file descriptor
-  
+  fclose(f);							// close file descriptor  
   return 0;
 }
 
 int save_image(char *image_full_name, wind_image **img)
 {
+  MagickWand *mw = NULL;					// image object
+  mw = NewMagickWand();						// create a wand
+  PixelWand *tmp_pixel = NewPixelWand();
+  PixelSetColor(tmp_pixel, "rgb(255,255,255)");			// set white pixel
+  
+  if(MagickNewImage(mw, (*img)->width, (*img)->height, tmp_pixel) == MagickFalse)
+  {
+    mw = DestroyMagickWand(mw);					// free memory magick_wand object
+    tmp_pixel = DestroyPixelWand(tmp_pixel);
+    ThrowWandException(mw);
+  }
+  PixelIterator *iterator = NULL;  
+  if((iterator = NewPixelIterator(mw)) == NULL)
+  {   
+    mw = DestroyMagickWand(mw);					// free memory magick_wand object
+    tmp_pixel = DestroyPixelWand(tmp_pixel);
+    ThrowWandException(mw);    
+  }  
+  PixelWand **pixels = NULL;
+  unsigned long ind_height, ind_width, tmp_width;  
+  for(ind_height = 0; ind_height < (*img)->height; ind_height++)	// get RGB channels for each pixel
+  {
+    pixels = PixelGetNextIteratorRow(iterator, &tmp_width);	// get row pixels
+    for(ind_width = 0; ind_width < (*img)->width; ind_width++)	// get RGB channels each pixel in row
+    {
+      PixelSetRed(tmp_pixel, (double)(((double)(*img)->arrayR[ind_width + (*img)->width * ind_height])/MAX_PIXEL_VALUE));
+      PixelSetGreen(tmp_pixel, (double)(((double)(*img)->arrayG[ind_width + (*img)->width * ind_height])/MAX_PIXEL_VALUE));
+      PixelSetBlue(tmp_pixel, (double)(((double)(*img)->arrayB[ind_width + (*img)->width * ind_height])/MAX_PIXEL_VALUE));
+      pixels[ind_width] = ClonePixelWand(tmp_pixel);     
+    }
+    PixelSyncIterator(iterator);	    
+  }    
+  
+  if(MagickWriteImage(mw, image_full_name) == MagickFalse)
+  {
+    tmp_pixel = DestroyPixelWand(tmp_pixel);
+    mw = DestroyMagickWand(mw);					// free memory magick_wand object
+    iterator = DestroyPixelIterator(iterator);
+    ThrowWandException(mw);
+  }
+  //iterator = DestroyPixelIterator(iterator);
+  tmp_pixel = DestroyPixelWand(tmp_pixel);
+  mw = DestroyMagickWand(mw);					// free memory magick_wand object
   return 0;
 }
 

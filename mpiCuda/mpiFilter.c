@@ -56,11 +56,11 @@ double start_mpi_filter(MPI_Comm comm, int rootRank, char **fileNames, char *fil
   full_fileName[strlen(filePath)+strlen(RESULT_FOLDER)+1] = '\0';
   if(full_fileName[strlen(filePath)+strlen(RESULT_FOLDER)] != '/')
   {
-    full_fileName[strlen(filePath)+strlen(RESULT_FOLDER)+1] = '/';
+    full_fileName[strlen(filePath)+strlen(RESULT_FOLDER)+	1] = '/';
     full_fileName[strlen(filePath)+strlen(RESULT_FOLDER)+2] = '\0';
   }
   strcat(full_fileName, fileName);
-  //fprintf(stdout, "result image [%d]: %s\n", tmpRank, full_fileName);
+  //fprintf(stdout, "\nresult image [%d]: %s\n", tmpRank, full_fileName);
   save_image(full_fileName, &result_image);
   
   
