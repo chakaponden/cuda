@@ -4,7 +4,7 @@
 #define KERNEL_SIZE 3
 #define MAX_PIXEL_VALUE 255
 
-typedef unsigned int pixel_channel;
+typedef signed int pixel_channel;
 
 int kernel[KERNEL_SIZE][KERNEL_SIZE] =				{  0, -1,  0,
 								  -1,  5, -1, 
@@ -195,7 +195,7 @@ double cpu_filter(wind_image **src_img, wind_image **result_img)
   return ((double)(end - begin) / CLOCKS_PER_SEC);
 }
 
-extern unsigned int* Shared_Memory_Convolution(unsigned int *channel, unsigned long width, unsigned long height, int kernel[3][3], float *time);
+//unsigned int* Shared_Memory_Convolution(unsigned int *channel, unsigned long width, unsigned long height, int kernel[3][3], float *time);
 
 
 double cuda_shared_memory(wind_image **src_img, wind_image **result_img)
@@ -210,11 +210,10 @@ double cuda_shared_memory(wind_image **src_img, wind_image **result_img)
   (*result_img)->arrayG = (pixel_channel*)malloc(width * height * sizeof(pixel_channel));
   (*result_img)->arrayB = (pixel_channel*)malloc(width * height * sizeof(pixel_channel));
   float time = 0, all_time = 0;
-  ((*result_img)->arrayR) = Shared_Memory_Convolution((*src_img)->arrayR, width, height, kernel, &time);
+  *((*result_img)->arrayR) = Shared_Memory_Convolution(((*src_img)->arrayR), width, height, kernel, &time);
   all_time += time;
-  ((*result_img)->arrayG) = Shared_Memory_Convolution((*src_img)->arrayG, width, height, kernel, &time);
+  *((*result_img)->arrayG) = Shared_Memory_Convolution(((*src_img)->arrayG), width, height, kernel, &time);
   all_time += time;
-  ((*result_img)->arrayB) = Shared_Memory_Convolution((*src_img)->arrayB, width, height, kernel, &time);
-  all_time += time;
+  *((*result_img)->arrayB) = Shared_Memory_Convolution(((*src_img)->arrayB), width, height, kernel, &time);
   return (double)all_time;
 }

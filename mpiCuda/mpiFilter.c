@@ -39,7 +39,7 @@ double start_mpi_filter(MPI_Comm comm, int rootRank, char **fileNames, char *fil
 /*
  * call filter
  */
-  execution_time = cpu_filter(&src_image, &result_image);
+  execution_time = cuda_shared_memory(&src_image, &result_image);
 /*
  * 
  */  
