@@ -8,9 +8,9 @@ typedef signed int pixel_channel;
 typedef unsigned long resolution;
 
 
-pixel_channel kernel[KERNEL_SIZE][KERNEL_SIZE] =		{  0, -1,  0,
-								  -1,  5, -1, 
-								   0, -1,  0 };
+pixel_channel kernel[KERNEL_SIZE][KERNEL_SIZE] =		{ -1, -1, -1,
+								  -1,  9, -1, 
+								  -1, -1, -1 };
 
 #define ThrowWandException(wand) \
 { \
