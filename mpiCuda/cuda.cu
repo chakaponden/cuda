@@ -151,7 +151,7 @@ __global__ void new_convolution(int *channel_cuda, int *rezult_cuda, int width, 
     }
 }
 
-extern "C" __host__ int** asyncConvolution(int **image, int width, int height)
+extern "C" __host__ void asyncConvolution(int **image, int width, int height)
 {
     #define STREAM_QUANTITY 3
     int **channel_cuda; channel_cuda = (int**)malloc(3*sizeof(int*));
@@ -220,5 +220,5 @@ extern "C" __host__ int** asyncConvolution(int **image, int width, int height)
 
     cudaDeviceReset();
 
-    return image;
+    return;
 }

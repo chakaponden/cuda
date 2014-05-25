@@ -1,6 +1,6 @@
 [COMPILE]:
 mpicc -c mpiFilter.c -o mpiFilter.o `Wand-config --cflags`
-nvcc -c cuda.cu -o cuda.o -arch sm_50
+nvcc -c cuda.cu -o cuda.o -arch sm_20
 mpicc mpiFilter.o cuda.o -o mpiFilter `Wand-config --cflags --libs` -L/opt/cuda-6.0/lib64 -lcudart
 gcc allocate.c -o startMpiFilter `MagickWand-config --cflags --ldflags`
 
