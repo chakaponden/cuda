@@ -1,6 +1,12 @@
 /*
  * [RUN]:
- * mpiexec -np <X> -hostfile <myHostFile> ./mpiFilter <image_path> <image_filelistname>\n<X> - process count\n
+ * mpiexec -np <X> -hostfile <myHostFile> ./mpiFilter <image_path> <image_filelistname> <mode> 
+ * <X>: process count
+ * <mode>:
+ * -cpu[s] == cpu filter
+ * -shared[s] == cuda shared memory filter
+ * -async[s] == cuda async filter
+ * [s] - if last symbol is 's', then save result to file
  */
 
 #include <mpi.h>
@@ -9,11 +15,11 @@
 #include <string.h>
 #include "filters.h"
 #define IMAGE_NAME_MAX_LEN 256
-#define ARG_ERROR_MESS "mpiexec -np <X> -hostfile <myHostFile> ./mpiFilter <image_path> <image_filelistname>\n<X> - process count\n"
+#define ARG_ERROR_MESS "mpiexec -np <X> -hostfile <myHostFile> ./mpiFilter <image_path> <image_filelistname> <mode>\n<X>: process count\n<mode>:\n-cpu == cpu filter\n-shared == cuda shared memory filter\n"
 #define RESULT_FOLDER "result"
 char fileName[IMAGE_NAME_MAX_LEN];
 
-double start_mpi_filter(MPI_Comm comm, int rootRank, char **fileNames, char *filePath)
+double start_mpi_filter(MPI_Comm comm, int rootRank, char **fileNames, char *filePath, char *mode)
 {
   int tmpRank, tmpSize;  
   MPI_Comm_rank(comm, &tmpRank);
@@ -31,15 +37,32 @@ double start_mpi_filter(MPI_Comm comm, int rootRank, char **fileNames, char *fil
   }
   strcat(full_fileName, fileName);
   //fprintf(stdout, "src_image [%d]: %s\n", tmpRank, full_fileName);
-  wind_image *src_image = NULL, *result_image = NULL;
-  MagickWandGenesis();						// initial MagikWand lib  
+  wind_image *src_image = NULL, *result_image = NULL;  
   if(new_image(full_fileName, &src_image) < 0)
     return -1.0;
   
 /*
  * call filter
  */
-  execution_time = cuda_shared_memory(&src_image, &result_image);
+  switch(mode[1])
+  {
+    case 's':					// cuda shared memory filter
+    {
+      execution_time = cuda_shared_memory(&src_image);
+      break;
+    }
+    case 'a':
+    {
+      execution_time = async_cuda_filter(&src_image);
+      break;
+    }
+    default:					// default is cpu filter
+    {
+      execution_time = cpu_filter(&src_image, &result_image);
+      break;
+    }
+  }
+  
 /*
  * 
  */  
@@ -53,15 +76,28 @@ double start_mpi_filter(MPI_Comm comm, int rootRank, char **fileNames, char *fil
   full_fileName[strlen(filePath)+strlen(RESULT_FOLDER)+1] = '\0';
   if(full_fileName[strlen(filePath)+strlen(RESULT_FOLDER)] != '/')
   {
-    full_fileName[strlen(filePath)+strlen(RESULT_FOLDER)+	1] = '/';
+    full_fileName[strlen(filePath)+strlen(RESULT_FOLDER)+1] = '/';
     full_fileName[strlen(filePath)+strlen(RESULT_FOLDER)+2] = '\0';
   }
   strcat(full_fileName, fileName);
   //fprintf(stdout, "\nresult image [%d]: %s\n", tmpRank, full_fileName);
-  save_image(full_fileName, &result_image);
-  
-  
-  MagickWandTerminus();						// end work with MagikWand lib
+  if(mode[strlen(mode)-1] == 's')		// save result to file
+  {
+    switch(mode[1])
+    {
+      case 's':					// cuda shared memory filter or cuda async filter
+      case 'a':
+      {
+	save_image(full_fileName, &src_image);
+	break;
+      }
+      default:					// default is cpu filter
+      {
+	save_image(full_fileName, &result_image);
+	break;
+      }
+    }
+  }
   free_image(&src_image);
   free_image(&result_image);
   return execution_time;
@@ -92,7 +128,7 @@ int globalRank, globalSize;
 
 int main(int argc, char *argv[])
 {   
-    if (argc != 3)
+    if (argc != 4)
     {
       fprintf(stdout, "%s", ARG_ERROR_MESS);
       return -1;
@@ -100,7 +136,6 @@ int main(int argc, char *argv[])
     long files_count;
     char *filenames;
     double execution_time;
-    
     MPI_Init(&argc, &argv);   
     MPI_Comm_rank(MPI_COMM_WORLD, &globalRank);
     MPI_Comm_size(MPI_COMM_WORLD, &globalSize);
@@ -120,7 +155,7 @@ int main(int argc, char *argv[])
       }
       */
     }
-    execution_time = start_mpi_filter(MPI_COMM_WORLD, 0, &filenames, argv[1]);
+    execution_time = start_mpi_filter(MPI_COMM_WORLD, 0, &filenames, argv[1], argv[3]);
     if(globalRank == 0)
     {
       free(filenames);
@@ -128,7 +163,7 @@ int main(int argc, char *argv[])
     char cpuName[IMAGE_NAME_MAX_LEN];
     int cpuHostNameLen;
     MPI_Get_processor_name(cpuName, &cpuHostNameLen);
-    fprintf(stdout, "[%d] %f %s %s\n", globalRank, execution_time, cpuName, fileName);
+    fprintf(stdout, "[%d] %f ms %s %s\n", globalRank, execution_time, cpuName, fileName);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return 0;

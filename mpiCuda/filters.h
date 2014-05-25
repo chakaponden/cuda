@@ -5,8 +5,10 @@
 #define MAX_PIXEL_VALUE 255
 
 typedef signed int pixel_channel;
+typedef unsigned long resolution;
 
-int kernel[KERNEL_SIZE][KERNEL_SIZE] =				{  0, -1,  0,
+
+pixel_channel kernel[KERNEL_SIZE][KERNEL_SIZE] =		{  0, -1,  0,
 								  -1,  5, -1, 
 								   0, -1,  0 };
 
@@ -22,8 +24,8 @@ int kernel[KERNEL_SIZE][KERNEL_SIZE] =				{  0, -1,  0,
 
 typedef struct
 {
-  unsigned long height;
-  unsigned long width;
+  resolution height;
+  resolution width;
   pixel_channel *arrayR;
   pixel_channel *arrayG;
   pixel_channel *arrayB;  
@@ -57,7 +59,7 @@ int new_image(char *image_full_name, wind_image **img)
     perror(": ");
     return -1;
   }
-  
+  MagickWandGenesis();						// initial MagikWand lib
   MagickWand *mw = NULL;					// image object
   mw = NewMagickWand();						// create a wand  
   if(MagickReadImageFile(mw, f) != MagickFalse)			// read image from open descriptor
@@ -74,7 +76,7 @@ int new_image(char *image_full_name, wind_image **img)
     fclose(f);
     ThrowWandException(mw);
   }  
-  unsigned long ind_height, ind_width, tmp_width;
+  resolution ind_height, ind_width, tmp_width;
   PixelIterator *iterator = NULL;
   if((iterator = NewPixelIterator(mw)) == NULL)
   {   
@@ -95,12 +97,14 @@ int new_image(char *image_full_name, wind_image **img)
   }  
   iterator = DestroyPixelIterator(iterator);			// free memory magick_wand iterator
   mw = DestroyMagickWand(mw);					// free memory magick_wand object
+  MagickWandTerminus();						// end work with MagikWand lib
   fclose(f);							// close file descriptor  
   return 0;
 }
 
 int save_image(char *image_full_name, wind_image **img)
 {
+  MagickWandGenesis();						// initial MagikWand lib
   MagickWand *mw = NULL;					// image object
   mw = NewMagickWand();						// create a wand
   PixelWand *tmp_pixel = NewPixelWand();
@@ -120,20 +124,19 @@ int save_image(char *image_full_name, wind_image **img)
     ThrowWandException(mw);    
   }  
   PixelWand **pixels = NULL;
-  unsigned long ind_height, ind_width, tmp_width;  
-  for(ind_height = 0; ind_height < (*img)->height; ind_height++)	// get RGB channels for each pixel
+  resolution ind_height, ind_width, tmp_width;  
+  for(ind_height = 0; ind_height < (*img)->height; ind_height++)// get RGB channels for each pixel
   {
     pixels = PixelGetNextIteratorRow(iterator, &tmp_width);	// get row pixels
     for(ind_width = 0; ind_width < (*img)->width; ind_width++)	// get RGB channels each pixel in row
     {
-      PixelSetRed(tmp_pixel, (double)(((double)(*img)->arrayR[ind_width + (*img)->width * ind_height])/MAX_PIXEL_VALUE));
-      PixelSetGreen(tmp_pixel, (double)(((double)(*img)->arrayG[ind_width + (*img)->width * ind_height])/MAX_PIXEL_VALUE));
-      PixelSetBlue(tmp_pixel, (double)(((double)(*img)->arrayB[ind_width + (*img)->width * ind_height])/MAX_PIXEL_VALUE));
+      PixelSetRed(tmp_pixel,   ((double)((unsigned char)(*img)->arrayR[ind_width + (*img)->width * ind_height]))/MAX_PIXEL_VALUE);
+      PixelSetGreen(tmp_pixel, ((double)((unsigned char)(*img)->arrayG[ind_width + (*img)->width * ind_height]))/MAX_PIXEL_VALUE);
+      PixelSetBlue(tmp_pixel,  ((double)((unsigned char)(*img)->arrayB[ind_width + (*img)->width * ind_height]))/MAX_PIXEL_VALUE);
       pixels[ind_width] = ClonePixelWand(tmp_pixel);     
     }
-    PixelSyncIterator(iterator);	    
+    PixelSyncIterator(iterator);
   }    
-  
   if(MagickWriteImage(mw, image_full_name) == MagickFalse)
   {
     tmp_pixel = DestroyPixelWand(tmp_pixel);
@@ -141,17 +144,23 @@ int save_image(char *image_full_name, wind_image **img)
     iterator = DestroyPixelIterator(iterator);
     ThrowWandException(mw);
   }
-  //iterator = DestroyPixelIterator(iterator);
-  tmp_pixel = DestroyPixelWand(tmp_pixel);
-  mw = DestroyMagickWand(mw);					// free memory magick_wand object
+  //if(((*img)->height * (*img)->width) <= 1)			// if image resolution <= 1024x768
+  //{								// then free MagikWand resource object
+    //printf("freeMem start\n");					// there are bugs if free MagikWand memory objects with
+    tmp_pixel = DestroyPixelWand(tmp_pixel);			// more 1024x768 resolution
+    iterator = DestroyPixelIterator(iterator);	
+    mw = DestroyMagickWand(mw);					// free memory magick_wand object
+    MagickWandTerminus();					// end work with MagikWand lib
+    //printf("freeMem end\n");
+  //}
   return 0;
 }
 
 double cpu_filter(wind_image **src_img, wind_image **result_img)
 {
-  unsigned long width = (*src_img)->width;
-  unsigned long height = (*src_img)->height;
-  unsigned long x, y, i, j, pixelPosX, pixelPosY;
+  resolution width = (*src_img)->width;
+  resolution height = (*src_img)->height;
+  resolution x, y, i, j, pixelPosX, pixelPosY;
   pixel_channel r, g, b, rSum, gSum, bSum;
   clock_t begin, end;
   free_image(result_img);
@@ -160,8 +169,7 @@ double cpu_filter(wind_image **src_img, wind_image **result_img)
   (*result_img)->width = width;
   (*result_img)->arrayR = (pixel_channel*)malloc(width * height * sizeof(pixel_channel));
   (*result_img)->arrayG = (pixel_channel*)malloc(width * height * sizeof(pixel_channel));
-  (*result_img)->arrayB = (pixel_channel*)malloc(width * height * sizeof(pixel_channel));
-  
+  (*result_img)->arrayB = (pixel_channel*)malloc(width * height * sizeof(pixel_channel));  
   begin = clock();
   for(x = 0; x < width; x++)
   for(y = 0; y < height; y++)
@@ -192,28 +200,32 @@ double cpu_filter(wind_image **src_img, wind_image **result_img)
       (*result_img)->arrayB[(width * y + x)] = (pixel_channel)bSum;
   }
   end = clock();
-  return ((double)(end - begin) / CLOCKS_PER_SEC);
+  return ((double)(end - begin) / (CLOCKS_PER_SEC/1000));
 }
 
-//unsigned int* Shared_Memory_Convolution(unsigned int *channel, unsigned long width, unsigned long height, int kernel[3][3], float *time);
-
-
-double cuda_shared_memory(wind_image **src_img, wind_image **result_img)
+double cuda_shared_memory(wind_image **src_img)
 {
-  unsigned long width = (*src_img)->width;
-  unsigned long height = (*src_img)->height;
-  free_image(result_img);
-  (*result_img) = (wind_image*)malloc(sizeof(wind_image));
-  (*result_img)->height = height;
-  (*result_img)->width = width;
-  (*result_img)->arrayR = (pixel_channel*)malloc(width * height * sizeof(pixel_channel));
-  (*result_img)->arrayG = (pixel_channel*)malloc(width * height * sizeof(pixel_channel));
-  (*result_img)->arrayB = (pixel_channel*)malloc(width * height * sizeof(pixel_channel));
-  float time = 0, all_time = 0;
-  *((*result_img)->arrayR) = Shared_Memory_Convolution(((*src_img)->arrayR), width, height, kernel, &time);
-  all_time += time;
-  *((*result_img)->arrayG) = Shared_Memory_Convolution(((*src_img)->arrayG), width, height, kernel, &time);
-  all_time += time;
-  *((*result_img)->arrayB) = Shared_Memory_Convolution(((*src_img)->arrayB), width, height, kernel, &time);
-  return (double)all_time;
+  clock_t begin, end;
+  begin = clock();
+  Shared_Memory_Convolution(&((*src_img)->arrayR), (*src_img)->width, (*src_img)->height, kernel);
+  Shared_Memory_Convolution(&((*src_img)->arrayG), (*src_img)->width, (*src_img)->height, kernel);
+  Shared_Memory_Convolution(&((*src_img)->arrayB), (*src_img)->width, (*src_img)->height, kernel);
+  end = clock();
+  return ((double)(end - begin) / (CLOCKS_PER_SEC/1000));
+}
+
+double async_cuda_filter(wind_image **src_img)
+{
+  clock_t begin, end;  
+  pixel_channel* RGB[3];
+  RGB[0] = (*src_img)->arrayR;
+  RGB[1] = (*src_img)->arrayG;
+  RGB[2] = (*src_img)->arrayB;
+  begin = clock();
+  asyncConvolution(RGB, (*src_img)->width, (*src_img)->height);
+  end = clock();
+  (*src_img)->arrayR = RGB[0];
+  (*src_img)->arrayG = RGB[1];
+  (*src_img)->arrayB = RGB[2];
+  return ((double)(end - begin) / (CLOCKS_PER_SEC/1000));  
 }

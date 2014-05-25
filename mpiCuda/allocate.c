@@ -3,7 +3,12 @@
  * gcc allocate.c -o startMpiFilter `MagickWand-config --cflags --ldflags`
  * 
  * [RUN]:
- * ./startMpiFilter <file_path> [hosts_ipv4]
+ * ./startMpiFilter <file_path> [hosts_ipv4] <mode>
+ *  <mode>:
+ * -cpu[s] == cpu filter
+ * -shared[s] == cuda shared memory filter
+ * -async[s] == cuda async filter
+ * [s] - if last symbol is 's', then save result to file
  * 
  */
 
@@ -13,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ARG_ERROR_MESS	"[RUN]:\n./startMpiFilter <images_path> [hosts_ipv4]\n"
+#define ARG_ERROR_MESS	"[RUN]:\n./startMpiFilter <images_path> [hosts_ipv4] <mode>\n<mode>:\n-cpu == cpu filter\n-shared == cuda shared memory filter\n"
 #define HOSTS_FILE_NAME "hosts.txt"
 #define IMAGES_FILE_NAME "images.txt"
 #define MPI_RUN_COMMAND "mpiexec"
@@ -118,7 +123,7 @@ void free_image_info(char ***filenames, double **image_resolutions, long files_c
 
 int main(int argc, char *argv[])
 {
-  if (argc < 3)
+  if (argc < 4)
   {
     fprintf(stdout, "%s", ARG_ERROR_MESS);
     return -1;
@@ -139,7 +144,7 @@ int main(int argc, char *argv[])
 /*
  *
  */    
-    hosts_num = argc - 2;
+    hosts_num = argc - 3;
     host_resolutions = (double*)malloc(hosts_num * sizeof(double));
     for(ind_tmp = 0; ind_tmp < images_num; ind_tmp++)
       all_resolutions += image_resolutions[ind_tmp];
@@ -243,7 +248,7 @@ int main(int argc, char *argv[])
   
   char proc_num[32];
   sprintf(proc_num, "%ld", images_num);
-  char *argList[] = { "mpiexec", "-np", proc_num, "-hostfile", HOSTS_FILE_NAME, MPI_PROGRAM_FILE, argv[1], IMAGES_FILE_NAME, NULL };
+  char *argList[] = { "mpiexec", "-np", proc_num, "-hostfile", HOSTS_FILE_NAME, MPI_PROGRAM_FILE, argv[1], IMAGES_FILE_NAME, argv[3], NULL };
   execvp("mpiexec", argList);
   return 0;
 }
