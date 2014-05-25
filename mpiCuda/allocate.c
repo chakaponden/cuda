@@ -1,6 +1,6 @@
 /*
  * [COMPILE]:
- * cc `MagickWand-config --cflags --cppflags` -o startMpiFilter allocate.c `MagickWand-config --ldflags --libs`
+ * gcc allocate.c -o startMpiFilter `MagickWand-config --cflags --ldflags`
  * 
  * [RUN]:
  * ./startMpiFilter <file_path> [hosts_ipv4]

@@ -1,7 +1,4 @@
 /*
- * [COPMILE]:
- * mpicc `Wand-config --cflags --cppflags` -o mpiFilter mpiFilter.c `Wand-config --ldflags --libs` -std=gnu99 -lm
- * 
  * [RUN]:
  * mpiexec -np <X> -hostfile <myHostFile> ./mpiFilter <image_path> <image_filelistname>\n<X> - process count\n
  */
