@@ -1,0 +1,28 @@
+[initBD COMPILE]:
+gcc -c initBD.c -o initBD.o -fopenmp
+nvcc -c cuda.cu -o cuda.o -arch sm_30
+gcc initBD.o cuda.o -o initBD -L/opt/cuda-6.0/lib64 -lcudart -lpthread -fopenmp
+
+[initBD RUN]:
+./initBD </full_path/BD_file> <image_height-width> <step>
+
+initBD_example_run:
+./initBD /home/x200/BD_file 2400 10
+
+
+[openMP COMPILE]:
+gcc -c openMP.c -o openMP.o `pkg-config --cflags --libs MagickWand` -fopenmp
+nvcc -c cuda.cu -o cuda.o -arch sm_30
+gcc openMP.o cuda.o -o openMP `pkg-config --cflags --libs MagickWand` -L/opt/cuda-6.0/lib64 -lcudart -fopenmp
+
+[openMP RUN]:
+./openMP </full_path/images_path> </full_path/BD_file> [-s]	
+[-s] - if exist, then save result to file
+ 
+openMP_example_run:
+./openMP /home/x200/images /mnt/studpublic/BD_file.bin -s
+
+/*
+ * WARNING! you need to create result images folder '/home/x200/images/result' manually
+ * if it's not, then you will get error at execution program example
+ */

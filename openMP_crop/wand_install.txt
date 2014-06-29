@@ -1,0 +1,33 @@
+-----------------
+debian install MagickWand:
+
+sudo apt-get update
+sudo apt-get install imagemagick libmagickwand-dev
+-----------------
+
+----------------
+altlinux install MagickWand:
+
+sudo apt-get update
+sudo apt-get install ImageMagick
+sudo apt-get install ImageMagick-devel
+---------------
+
+sudo apt-get update
+tar xvfz jpegsrc.v8c.tar.gz
+cd jpeg-8c
+./configure --enable-shared --prefix=$CONFIGURE_PREFIX
+make
+sudo make install
+
+
+tar xvzf ImageMagick.tar.gz
+cd ImageMagick-6.8.9-1
+export CPPFLAGS=-I/usr/local/include
+export LDFLAGS=-L/usr/local/lib
+sudo apt-get install mingw32-libltdl
+./configure --with-jpeg=yes --with-png=yes --with-freetype=yes
+make
+sudo make install
+sudo ldconfig /usr/local/lib
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig 
