@@ -1,0 +1,16 @@
+[COMPILE]:
+mpicc -c openMP.c -o openMP.o `pkg-config --cflags --libs MagickWand`
+nvcc -c cuda.cu -o cuda.o -arch sm_20
+mpicc openMP.o cuda.o -o openMP `pkg-config --cflags --libs MagickWand` -L/opt/cuda-6.0/lib64 -lcudart
+
+[RUN]:
+./openMP </full_path/images_path> <testImage> [-s]
+[-s] - if exist, then save result to file
+ 
+example_run:
+./openMP /home/x200/images test.jpg -s
+
+/*
+ * WARNING! you need to create result images folder '/home/x200/images/result' manually
+ * if it's not, then you will get error at execution program example
+ */
