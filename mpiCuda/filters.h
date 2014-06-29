@@ -144,17 +144,18 @@ int save_image(char *image_full_name, wind_image **img)
     iterator = DestroyPixelIterator(iterator);
     ThrowWandException(mw);
   }
-  /*
-  if(((*img)->height * (*img)->width) <= 1)			// if image resolution <= 1024x768
-  {								// then free MagikWand resource object
-    printf("freeMem start\n");					// there are bugs if free MagikWand memory objects with
-    tmp_pixel = DestroyPixelWand(tmp_pixel);			// more 1024x768 resolution
-    iterator = DestroyPixelIterator(iterator);	
-    mw = DestroyMagickWand(mw);					// free memory magick_wand object
-    MagickWandTerminus();					// end work with MagikWand lib
-    printf("freeMem end\n");
-  }
-  */
+/*
+ * this code is commented because there are bugs if free MagikWand memory objects and end work with MagikWand lib
+ * with images more 1024x768 resolution (program will hangs and do not respond)
+ */  
+/*
+  printf("freeMem start\n");
+  tmp_pixel = DestroyPixelWand(tmp_pixel);
+  iterator = DestroyPixelIterator(iterator);	
+  mw = DestroyMagickWand(mw);					// free memory magick_wand object
+  MagickWandTerminus();						// end work with MagikWand lib
+  printf("freeMem end\n");
+*/
   return 0;
 }
 

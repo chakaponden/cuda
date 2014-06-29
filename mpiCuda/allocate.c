@@ -1,9 +1,9 @@
 /*
  * [COMPILE]:
- * gcc allocate.c -o startMpiFilter `MagickWand-config --cflags --ldflags`
+ * gcc allocate.c -o startMpiFilter `pkg-config --cflags --libs MagickWand`
  * 
  * [RUN]:
- * ./startMpiFilter <file_path> [hosts_ipv4] <mode>
+ * ./startMpiFilter </full_path/images_path> [hosts_ipv4] <mode>
  *  <mode>:
  * -cpu[s] == cpu filter
  * -shared[s] == cuda shared memory filter
@@ -18,11 +18,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ARG_ERROR_MESS	"[RUN]:\n./startMpiFilter <images_path> [hosts_ipv4] <mode>\n<mode>:\n-cpu == cpu filter\n-shared == cuda shared memory filter\n"
+#define ARG_ERROR_MESS	"[RUN]:\n./startMpiFilter </full_path/images_path> [hosts_ipv4] <mode>\n<mode>:\n-cpu == cpu filter\n-shared == cuda shared memory filter\n"
 #define HOSTS_FILE_NAME "hosts.txt"
 #define IMAGES_FILE_NAME "images.txt"
 #define MPI_RUN_COMMAND "mpiexec"
 #define MPI_PROGRAM_FILE "mpiFilter"
+#define FILE_NAME_MAX_LEN 256
 
 
 #define ThrowWandException(wand) \
@@ -244,12 +245,29 @@ int main(int argc, char *argv[])
   }
   else
     return (int)images_num;
+  free(host_resolutions);
   free_image_info(&filenames, &image_resolutions, images_num);
   
   char proc_num[32];
+  
+  char host_file_full_path[FILE_NAME_MAX_LEN];
+  getcwd(host_file_full_path, FILE_NAME_MAX_LEN-1);
+  strcat(host_file_full_path, "/");
+  strcat(host_file_full_path, HOSTS_FILE_NAME);
+  
+  char mpi_program_file_full_path[FILE_NAME_MAX_LEN];
+  getcwd(mpi_program_file_full_path, FILE_NAME_MAX_LEN-1);
+  strcat(mpi_program_file_full_path, "/");
+  strcat(mpi_program_file_full_path, MPI_PROGRAM_FILE);
+  
+  char images_file_full_path[FILE_NAME_MAX_LEN];
+  getcwd(images_file_full_path, FILE_NAME_MAX_LEN-1);
+  strcat(images_file_full_path, "/");
+  strcat(images_file_full_path, IMAGES_FILE_NAME);
+  
   sprintf(proc_num, "%ld", images_num);
-  char *argList[] = { "mpiexec", "-np", proc_num, "-hostfile", HOSTS_FILE_NAME, MPI_PROGRAM_FILE, argv[1], IMAGES_FILE_NAME, argv[3], NULL };
-  execvp("mpiexec", argList);
+  char *argList[] = { MPI_RUN_COMMAND, "-np", proc_num, "-hostfile", host_file_full_path, mpi_program_file_full_path, argv[1], IMAGES_FILE_NAME, argv[3], NULL };
+  execvp(MPI_RUN_COMMAND, argList);
   return 0;
 }
 
